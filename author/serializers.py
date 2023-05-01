@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from .models import Author
 import re
@@ -12,10 +14,13 @@ class AuthorSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        password = validated_data.pop('password', None)
+        password = validated_data.pop('password')
         instance = self.Meta.model(**validated_data)
-        if password:
-            instance.set_password(password)
+        try:
+            validate_password(password)
+        except ValidationError as error:
+            raise serializers.ValidationError(error.messages)
+        instance.set_password(password)
         instance.save()
         return instance
 
